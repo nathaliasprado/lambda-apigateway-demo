@@ -4,6 +4,13 @@ resource "aws_api_gateway_rest_api" "apigateway" {
   endpoint_configuration {
     types = var.types
   }
+
+  tags = {
+    Name        = var.name
+    environment = var.environment
+    repository  = var.repository
+    terraform   = true
+  }
 }
 
 resource "aws_api_gateway_resource" "resource" {

@@ -10,6 +10,18 @@ variable "types" {
   default     = ["REGIONAL"]
 }
 
+variable "environment" {
+  description = "Resource environment (DEV, HML, PRD)."
+  type        = string
+  default     = "DEV"
+}
+
+variable "repository" {
+  description = "Name of the repository."
+  type        = string
+  default     = "lambda-apigateway-demo"
+}
+
 variable "path_part" {
   description = "Last path segment of this API resource."
   type        = string
