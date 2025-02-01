@@ -1,12 +1,18 @@
+import json
 import boto3
+from decimal import Decimal
 
-# Define the DynamoDB table that Lambda will connect to
+# Função para converter Decimal em int/float
+def decimal_converter(obj):
+    if isinstance(obj, Decimal):
+        return int(obj) if obj % 1 == 0 else float(obj)
+    raise TypeError
+
+# Define o DynamoDB
 table_name = "lambda-apigateway"
-
-# Create the DynamoDB resource
 dynamo = boto3.resource('dynamodb').Table(table_name)
 
-# Define some functions to perform the CRUD operations
+# CRUD functions
 def create(payload):
     return dynamo.put_item(Item=payload['Item'])
 
@@ -32,17 +38,32 @@ operations = {
 }
 
 def lambda_handler(event, context):
-    '''Provide an event that contains the following keys:
-      - operation: one of the operations in the operations dict below
-      - payload: a JSON object containing parameters to pass to the 
-        operation being performed
-    '''
-    
-    operation = event['operation']
-    payload = event['payload']
-    
-    if operation in operations:
-        return operations[operation](payload)
+    try:
+        # Converte o body de string JSON para dicionário
+        if isinstance(event.get("body"), str):
+            event = json.loads(event["body"])
         
-    else:
-        raise ValueError(f'Unrecognized operation "{operation}"')
+        operation = event['operation']
+        payload = event['payload']
+        
+        if operation in operations:
+            response = operations[operation](payload)
+            return {
+                "statusCode": 200,
+                "body": json.dumps(response, default=decimal_converter)  # Aplica conversão
+            }
+        else:
+            return {
+                "statusCode": 400,
+                "body": json.dumps({"error": f'Unrecognized operation "{operation}"'})
+            }
+    except KeyError as e:
+        return {
+            "statusCode": 400,
+            "body": json.dumps({"error": f"Missing key: {str(e)}"})
+        }
+    except Exception as e:
+        return {
+            "statusCode": 500,
+            "body": json.dumps({"error": str(e)})
+        }
